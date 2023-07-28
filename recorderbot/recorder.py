@@ -6,6 +6,8 @@ from typing import Any, List
 
 from tinydb import Query, TinyDB
 
+from .utils import readable_time
+
 
 class RecordItem(dict):
     required = ("timestamp", "content", "type")
@@ -27,7 +29,7 @@ class RecordItem(dict):
     def to_str(self) -> str:
         return "{} record at {}:\n{}".format(
             self["type"],
-            time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(self["timestamp"])),
+            readable_time(self["timestamp"]),
             self["content"],
         )
 
