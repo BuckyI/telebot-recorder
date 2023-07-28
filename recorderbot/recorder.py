@@ -1,7 +1,5 @@
 import logging
 import re
-import time
-from collections import namedtuple
 from typing import Any, List
 
 from tinydb import Query, TinyDB

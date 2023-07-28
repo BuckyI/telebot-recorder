@@ -1,5 +1,6 @@
 import os
-import time
+
+import arrow
 
 
 def is_small_file(file_path: str) -> bool:
@@ -21,6 +22,7 @@ def readable_time(timestamp: int = None) -> str:
         timestamp (int, optional): timestamp. Defaults to None (now).
 
     Returns:
-        str: formated time string
+        str: formated time string, in timezone Asia/Shanghai
     """
-    return time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(timestamp))
+    t = arrow.get(timestamp) if timestamp else arrow.get()
+    return t.to("Asia/Shanghai").format("YYYY-MM-DD HH:mm:ss")
