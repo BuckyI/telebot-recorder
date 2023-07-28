@@ -7,7 +7,7 @@ import telebot
 from decouple import config
 from telebot.util import extract_arguments, extract_command, quick_markup
 
-from recorder import Recorder, RecordItem
+from .recorder import Recorder, RecordItem
 
 BOT_TOKEN: Final = config("BOT_TOKEN", default="")
 BOT_USERNAME: Final = config("BOT_USERNAME", default="")
