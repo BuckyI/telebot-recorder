@@ -5,9 +5,11 @@ from typing import Final
 
 import telebot
 from decouple import config
+from telebot.types import InputFile
 from telebot.util import extract_arguments, extract_command, quick_markup
 
 from .recorder import Recorder, RecordItem
+from .utils import is_small_file
 
 BOT_TOKEN: Final = config("BOT_TOKEN", default="")
 BOT_USERNAME: Final = config("BOT_USERNAME", default="")
@@ -21,6 +23,14 @@ recorder = Recorder(DATABASE)
 @bot.message_handler(commands=["start"])
 def send_welcome(message):
     bot.send_message(message.chat.id, "Hello, how are you doing?")
+
+
+@bot.message_handler(commands=["backup"])
+def backup(message):
+    # TODO: Get file ID
+    if not is_small_file(DATABASE):
+        bot.send_message(message.chat.id, "Database is too big to backup 👀")
+    bot.send_document(message.chat.id, InputFile(DATABASE), caption="Backup")
 
 
 @bot.message_handler(commands=["search"])
