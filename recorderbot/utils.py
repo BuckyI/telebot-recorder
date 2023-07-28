@@ -15,6 +15,12 @@ def is_small_file(file_path: str) -> bool:
 
 
 def readable_time(timestamp: int = None) -> str:
-    if timestamp is None:
-        timestamp = time.time()
+    """Get readdable time string of given timestamp
+
+    Args:
+        timestamp (int, optional): timestamp. Defaults to None (now).
+
+    Returns:
+        str: formated time string
+    """
     return time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(timestamp))
