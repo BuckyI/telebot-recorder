@@ -9,7 +9,7 @@ from telebot.types import InputFile
 from telebot.util import extract_arguments, extract_command, quick_markup
 
 from .recorder import Recorder, RecordItem
-from .utils import is_small_file
+from .utils import is_small_file, save_file
 
 BOT_TOKEN: Final = config("BOT_TOKEN", default="")
 BOT_USERNAME: Final = config("BOT_USERNAME", default="")
@@ -31,6 +31,27 @@ def backup(message):
     if not is_small_file(DATABASE):
         bot.send_message(message.chat.id, "Database is too big to backup 👀")
     bot.send_document(message.chat.id, InputFile(DATABASE), caption="Backup")
+
+
+@bot.message_handler(commands=["restore"])
+def restore(message):
+    bot.send_message(message.chat.id, "Give me a document to restore 🤖")
+
+    def save_file_from_message(message):
+        if not message.content_type == "document":
+            bot.send_message(message.chat.id, "You have to upload a file 🤖")
+
+        url = bot.get_file_url(message.document.file_id)
+        save_file(url, "temp.json")
+        msg = bot.send_message(message.chat.id, f"Received, in processing...")
+        num = recorder.merge("temp.json")
+        bot.edit_message_text(
+            f"Updated {num} record successfully 😃",
+            msg.chat.id,
+            msg.message_id,
+        )
+
+    bot.register_next_step_handler(message, save_file_from_message)
 
 
 @bot.message_handler(commands=["search"])

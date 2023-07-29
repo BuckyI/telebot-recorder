@@ -52,3 +52,23 @@ class Recorder:
     def search(self, substr: str) -> RecordItem:
         for i in self.db.search(Query().content.search(substr, flags=re.IGNORECASE)):
             yield RecordItem.from_dict(i)
+
+    def merge(self, path: str) -> int:
+        """Merge records from another json file. Use timestamp to identify same records.
+
+        Args:
+            path (str): json file path
+
+        Returns:
+            int: the newly added record count
+        """
+        db = TinyDB(path)
+        count = 0
+        for item in db:
+            if self.db.contains(Query().timestamp == item["timestamp"]):
+                continue
+            item = dict(item)  # remove doc_id
+            self.db.insert(item)
+            count += 1
+            print("add record:", item)
+        return count
