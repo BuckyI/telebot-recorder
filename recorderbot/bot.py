@@ -81,6 +81,25 @@ def record(message):
 # TODO: HOSTING ON A WEB SERVER
 
 
+# Handle all other messages.
+@bot.message_handler(
+    func=lambda message: True,
+    content_types=[
+        "audio",
+        "photo",
+        "voice",
+        "video",
+        "document",
+        "text",
+        "location",
+        "contact",
+        "sticker",
+    ],
+)
+def catch_all(message):
+    bot.reply_to(message, "This message type is not supported.")
+
+
 def start_polling():
     if HTTPS_PROXY:
         os.environ["https_proxy"] = HTTPS_PROXY
