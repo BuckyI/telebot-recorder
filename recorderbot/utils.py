@@ -1,6 +1,7 @@
 import os
 
 import arrow
+import requests
 
 
 def is_small_file(file_path: str) -> bool:
@@ -26,3 +27,11 @@ def readable_time(timestamp: int = None) -> str:
     """
     t = arrow.get(timestamp) if timestamp else arrow.get()
     return t.to("Asia/Shanghai").format("YYYY-MM-DD HH:mm:ss")
+
+
+def save_file(url: str, filename="temp.txt"):
+    response = requests.get(url)
+    with open(filename, "wb") as f:
+        for chunk in response.iter_content(chunk_size=1024):
+            if chunk:
+                f.write(chunk)
