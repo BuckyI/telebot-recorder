@@ -13,7 +13,6 @@ from .utils import is_small_file, save_file
 
 BOT_TOKEN: Final = config("BOT_TOKEN", default="")
 BOT_USERNAME: Final = config("BOT_USERNAME", default="")
-HTTPS_PROXY: Final = config("HTTPS_PROXY", default="")
 DATABASE: Final = config("DATABASE", default="botdb.json")
 
 bot = telebot.TeleBot(BOT_TOKEN)
