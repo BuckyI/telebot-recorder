@@ -85,17 +85,19 @@ class Recorder:
         self.backup()
         return count
 
-    def merge_from_backup(self):
+    def merge_from_backup(self) -> int:
+        "return updated record count"
+        count = 0
         if not self.storage:
             print("No WebDAV available")
-            return
+            return count
         try:
             self.storage.download_latest("temp.json")
             count = self.merge("temp.json")
             # TODO: remove temp file
-            print(f"Restored {count} records 😃")
         except Exception:
             logging.error("the downloaded file may not be a valid backup")
+        return count
 
     def backup(self):
         """if WebDAV is available, backup the database"""
