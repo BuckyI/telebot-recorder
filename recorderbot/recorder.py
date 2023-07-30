@@ -55,6 +55,10 @@ class Recorder:
             logging.warning("WebDAV initialization failed, can't backup.")
             self.storage = None
 
+    @property
+    def size(self):
+        return len(self.db)
+
     def record(self, item: RecordItem) -> int:
         doc_id = self.db.insert(item)
         self.backup()
