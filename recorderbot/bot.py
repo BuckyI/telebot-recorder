@@ -153,15 +153,3 @@ def record(message):
 )
 def catch_all(message):
     bot.reply_to(message, "This message type is not supported.")
-
-
-def start_polling():
-    if HTTPS_PROXY:
-        os.environ["https_proxy"] = HTTPS_PROXY
-    logging.info("Polling...")
-    bot.infinity_polling()
-
-
-# Run the program
-if __name__ == "__main__":
-    start_polling()
