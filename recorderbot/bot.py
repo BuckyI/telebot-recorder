@@ -22,7 +22,10 @@ recorder = Recorder(DATABASE)
 
 @bot.message_handler(commands=["start"])
 def send_welcome(message):
-    bot.send_message(message.chat.id, "Hello, how are you doing?")
+    msg = (
+        f"Hello, how are you doing?\n" f"You have recorded {recorder.size} messages!\n"
+    )
+    bot.send_message(message.chat.id, msg)
 
 
 @bot.message_handler(commands=["backup"])
