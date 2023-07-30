@@ -31,7 +31,6 @@ class WebDAV:
             "disable_check": True,  # 坚果云似乎不支持 check，会无法访问资源
             "verbose": True,
         }
-        print(options)
         self.client = Client(options)
 
     @property
