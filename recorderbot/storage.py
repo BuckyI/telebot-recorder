@@ -33,6 +33,10 @@ class WebDAV:
             "verbose": True,
         }
         self.client = Client(options)
+        try:
+            self.client.list()  # test function
+        except Exception:
+            logging.error("WebDAV failed to launch, check your settings!")
 
     @property
     def resources(self):
