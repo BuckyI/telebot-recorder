@@ -1,3 +1,4 @@
+import logging
 from pathlib import Path
 from typing import Final
 
@@ -44,10 +45,11 @@ class WebDAV:
     def upload(self, source: str, dest: str) -> None:
         assert Path(source).exists(), "file to be uploaded does not exist"
         if self.exists(dest):
-            print("%s already exists, it will be overwrite" % dest)
+            logging.warning("%s already exists, it will be overwrite" % dest)
 
         self.client.upload(dest, source)
 
     def download_latest(self, dest: str, filter: str = ".json") -> None:
         latest = max([i for i in self.client.list() if i.endswith(filter)])
+        logging.info("latest file is %s" % latest)
         self.client.download(latest, dest)

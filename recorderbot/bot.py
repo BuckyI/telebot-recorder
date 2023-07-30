@@ -1,6 +1,6 @@
+import logging
 import os
 import time
-from pprint import pprint
 from typing import Final
 
 import telebot
@@ -158,7 +158,7 @@ def catch_all(message):
 def start_polling():
     if HTTPS_PROXY:
         os.environ["https_proxy"] = HTTPS_PROXY
-    print("Polling...")
+    logging.info("Polling...")
     bot.infinity_polling()
 
 
