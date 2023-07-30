@@ -16,17 +16,18 @@ def is_small_file(file_path: str) -> bool:
     return False
 
 
-def readable_time(timestamp: int = None) -> str:
+def readable_time(timestamp: int = None, format: str = "YYYY-MM-DD HH:mm:ss") -> str:
     """Get readdable time string of given timestamp
 
     Args:
         timestamp (int, optional): timestamp. Defaults to None (now).
+        format (str, optional): format. Defaults to "YYYY-MM-DD HH:mm:ss".
 
     Returns:
         str: formated time string, in timezone Asia/Shanghai
     """
     t = arrow.get(timestamp) if timestamp else arrow.get()
-    return t.to("Asia/Shanghai").format("YYYY-MM-DD HH:mm:ss")
+    return t.to("Asia/Shanghai").format(format)
 
 
 def save_file(url: str, filename="temp.txt"):
