@@ -4,6 +4,7 @@ from typing import Any, List
 
 from tinydb import Query, TinyDB
 
+from .storage import WebDAV
 from .utils import readable_time
 
 
@@ -44,10 +45,20 @@ class RecordItem(dict):
 
 class Recorder:
     def __init__(self, db_path: str = "db.json") -> None:
+        self.db_path = db_path
         self.db = TinyDB(db_path)
 
+        try:
+            # use environment variables to initialize a WebDAV client
+            self.storage = WebDAV()
+        except Exception:
+            logging.warning("WebDAV initialization failed, can't backup.")
+            self.storage = None
+
     def record(self, item: RecordItem) -> int:
-        return self.db.insert(item)
+        doc_id = self.db.insert(item)
+        self.backup()
+        return doc_id
 
     def search(self, substr: str) -> RecordItem:
         for i in self.db.search(Query().content.search(substr, flags=re.IGNORECASE)):
@@ -71,4 +82,25 @@ class Recorder:
             self.db.insert(item)
             count += 1
             print("add record:", item)
+        self.backup()
         return count
+
+    def merge_from_backup(self):
+        if not self.storage:
+            print("No WebDAV available")
+            return
+        try:
+            self.storage.download_latest("temp.json")
+            count = self.merge("temp.json")
+            # TODO: remove temp file
+            print(f"Restored {count} records 😃")
+        except Exception:
+            logging.error("the downloaded file may not be a valid backup")
+
+    def backup(self):
+        """if WebDAV is available, backup the database"""
+        if not self.storage:
+            return
+        filename = "%s.json" % readable_time(format="YYYYMMDDHHmmss")
+        self.storage.upload(self.db_path, filename)
+        return filename
