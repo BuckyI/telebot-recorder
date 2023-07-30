@@ -35,23 +35,54 @@ def backup(message):
 
 @bot.message_handler(commands=["restore"])
 def restore(message):
-    bot.send_message(message.chat.id, "Give me a document to restore 🤖")
+    # TODO: simplify it
+    markup = quick_markup(
+        {
+            "Upload a file 📄": {"callback_data": "restore file"},
+            "From WebDAV 📥": {"callback_data": "restore webdav"},
+        }
+    )
+    bot.reply_to(message, f"Confirm how to restore 👀", reply_markup=markup)
 
-    def save_file_from_message(message):
-        if not message.content_type == "document":
-            bot.send_message(message.chat.id, "You have to upload a file 🤖")
+    def restore_from_file(query):
+        chat_id, message_id = query.message.chat.id, query.message.message_id
+        bot.edit_message_text("Give me a document to restore 🤖", chat_id, message_id)
 
-        url = bot.get_file_url(message.document.file_id)
-        save_file(url, "temp.json")
-        msg = bot.send_message(message.chat.id, f"Received, in processing...")
-        num = recorder.merge("temp.json")
+        def save_file_from_message(message):
+            if message.content_type != "document":
+                bot.send_message(message.chat.id, "You have to upload a file 🤖")
+                return
+
+            url = bot.get_file_url(message.document.file_id)
+            save_file(url, "temp.json")
+            msg = bot.send_message(message.chat.id, f"Received, in processing...")
+            num = recorder.merge("temp.json")
+            bot.edit_message_text(
+                f"Updated {num} record successfully 😃, total: {recorder.size}",
+                msg.chat.id,
+                msg.message_id,
+            )
+
+        bot.register_next_step_handler(query.message, save_file_from_message)
+
+    def restore_from_webdav(query):
+        chat_id, message_id = query.message.chat.id, query.message.message_id
+        bot.edit_message_text("in processing... 🤖", chat_id, message_id)
+        num = recorder.merge_from_backup()
         bot.edit_message_text(
-            f"Updated {num} record successfully 😃",
-            msg.chat.id,
-            msg.message_id,
+            f"Updated {num} record successfully 😃, total: {recorder.size}",
+            chat_id,
+            message_id,
         )
 
-    bot.register_next_step_handler(message, save_file_from_message)
+    bot.register_callback_query_handler(
+        restore_from_file,
+        lambda query: query.data == "restore file",
+    )
+    bot.register_callback_query_handler(
+        restore_from_webdav,
+        lambda query: query.data == "restore webdav",
+    )
 
 
 @bot.message_handler(commands=["search"])
