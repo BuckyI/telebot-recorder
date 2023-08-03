@@ -73,6 +73,10 @@ class Recorder:
         for i in self.db.search(Query().content.search(substr, flags=re.IGNORECASE)):
             yield RecordItem.from_dict(i)
 
+    def exits(self, record: dict) -> bool:
+        "check if given record item exists by timestamp"
+        return self.db.contains(Query().timestamp == record["timestamp"])
+
     def merge(self, path: str) -> int:
         """Merge records from another json file. Use timestamp to identify same records.
 
@@ -88,7 +92,7 @@ class Recorder:
             return
         count = 0
         for item in db:
-            if self.db.contains(Query().timestamp == item["timestamp"]):
+            if self.exits(item):
                 continue
             item = dict(item)  # remove doc_id
             self.db.insert(item)
