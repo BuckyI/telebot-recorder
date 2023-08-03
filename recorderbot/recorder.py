@@ -10,6 +10,7 @@ from .utils import readable_time
 
 class RecordItem(dict):
     required = ("timestamp", "content", "type")
+    optional = ("tags",)  # supported additional keys in kwargs
 
     def __init__(
         self,
@@ -17,12 +18,12 @@ class RecordItem(dict):
         content: str,
         type: str = "normal",
         /,
-        tags: List[str] = [],
         **kwargs,
     ):
         "necessary keys with optional additional keys"
         super().__init__(timestamp=timestamp, content=content, type=type)
-        kwargs = {k: v for k, v in kwargs.items() if v}  # filter empty values
+        # filter optional non-empty key-values
+        kwargs = {k: v for k, v in kwargs.items() if v and v in self.optional}
         self.update(kwargs)
 
     def to_str(self) -> str:
