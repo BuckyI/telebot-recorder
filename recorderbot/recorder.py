@@ -45,11 +45,14 @@ class RecordItem(dict):
 
 
 class Recorder:
+    tablename = "records"
+
     def __init__(self, db_path: str = "db.json") -> None:
         self.db_path = db_path
         self.db = TinyDB(db_path)
-        self.db.default_table_name = "records"  # set table name of records
+        self.db.default_table_name = self.tablename  # set table name of records
 
+        # TODO: make storage outside
         try:
             # use environment variables to initialize a WebDAV client
             self.storage = WebDAV()
@@ -79,7 +82,10 @@ class Recorder:
         Returns:
             int: the newly added record count
         """
-        db = TinyDB(path)
+        db = TinyDB(path).table(self.tablename)
+        if len(db) == 0:
+            logging.warning("no valid data is in the source")
+            return
         count = 0
         for item in db:
             if self.db.contains(Query().timestamp == item["timestamp"]):
