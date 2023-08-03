@@ -48,6 +48,7 @@ class Recorder:
     def __init__(self, db_path: str = "db.json") -> None:
         self.db_path = db_path
         self.db = TinyDB(db_path)
+        self.db.default_table_name = "records"  # set table name of records
 
         try:
             # use environment variables to initialize a WebDAV client
