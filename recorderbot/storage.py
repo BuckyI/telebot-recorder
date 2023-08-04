@@ -1,9 +1,13 @@
 import logging
 from pathlib import Path
-from typing import Final
+from tempfile import NamedTemporaryFile
+from typing import Final, List, Optional
 
 from decouple import config
+from tinydb import Query, TinyDB
 from webdav3.client import Client
+
+from .utils import readable_time
 
 HOSTNAME: Final = config("WEBDAV_HOSTNAME", default="")
 USERNAME: Final = config("WEBDAV_USERNAME", default="")
@@ -77,7 +81,10 @@ class DataBase:
         return filename
 
     def restore(self, path: str = None) -> int:
-        "return updated number"
+        """restore data from file
+        path (str, optional): file with data to restore. Defaults to None.
+        return: updated item number
+        """
         if path is None:
             path = "temp.json"
             self.webdav.download_latest(path)
