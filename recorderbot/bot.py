@@ -31,6 +31,11 @@ def send_welcome(message):
     bot.send_message(message.chat.id, msg)
 
 
+@bot.message_handler(commands=["debug"])
+def debug(message):
+    bot.send_message(message.chat.id, str(message))
+
+
 @bot.message_handler(commands=["register"])
 def register(message):
     if auth.is_registered(message.chat.id):
