@@ -9,6 +9,7 @@ from telebot.types import InputFile
 from telebot.util import extract_arguments, extract_command, quick_markup
 
 from .recorder import Recorder, RecordItem
+from .storage import DataBase
 from .utils import is_small_file, save_file
 
 BOT_TOKEN: Final = config("BOT_TOKEN", default="")
@@ -16,6 +17,7 @@ BOT_USERNAME: Final = config("BOT_USERNAME", default="")
 DATABASE: Final = config("DATABASE", default="botdb.json")
 
 bot = telebot.TeleBot(BOT_TOKEN)
+storage = DataBase(DATABASE)
 recorder = Recorder(DATABASE)
 
 
@@ -37,6 +39,11 @@ def backup(message):
 
 @bot.message_handler(commands=["restore"])
 def restore(message):
+    """
+    select how to restore -->
+    - from file --> upload a file --> restore
+    - from webdav --> restore
+    """
     # TODO: simplify it
     markup = quick_markup(
         {
@@ -58,9 +65,9 @@ def restore(message):
             url = bot.get_file_url(message.document.file_id)
             save_file(url, "temp.json")
             msg = bot.send_message(message.chat.id, f"Received, in processing...")
-            num = recorder.merge("temp.json")
+            num = storage.restore("temp.json")
             bot.edit_message_text(
-                f"Updated {num} record successfully 😃, total: {recorder.size}",
+                f"updated {num} item(s) successfully 😃, total records: {recorder.size}",
                 msg.chat.id,
                 msg.message_id,
             )
@@ -70,9 +77,9 @@ def restore(message):
     def restore_from_webdav(query):
         chat_id, message_id = query.message.chat.id, query.message.message_id
         bot.edit_message_text("in processing... 🤖", chat_id, message_id)
-        num = recorder.merge_from_backup()
+        num = storage.restore()
         bot.edit_message_text(
-            f"Updated {num} record successfully 😃, total: {recorder.size}",
+            f"updated {num} item(s) successfully 😃, total records: {recorder.size}",
             chat_id,
             message_id,
         )
