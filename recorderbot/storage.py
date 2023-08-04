@@ -97,8 +97,8 @@ class DataBase:
         count = 0
         for src, dst in zip(source_tables, dest_tables):
             for doc in src:
-                print(doc, type(doc))
                 if not dst.contains(Query().fragment(doc)):
                     dst.insert(dict(doc))  # removing doc id
                     count += 1
+        logging.info("restore %d records from file %s", count, path)
         return count

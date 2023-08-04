@@ -128,6 +128,8 @@ def record(message):
             # bot.edit_message_reply_markup(chat_id, message_id)
             message = query.message.reply_to_message  # point to the message to be saved
             doc_id = recorder.record(RecordItem(message.date, message.text))
+            storage.backup()
+            logging.info("backup after new record added via webdav")
             bot.edit_message_text(f"Record saved. ({doc_id})", chat_id, message_id)
         elif query.data == "drop record":
             bot.edit_message_text("This message is deprecated.", chat_id, message_id)
