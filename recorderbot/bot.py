@@ -8,6 +8,7 @@ from decouple import config
 from telebot.types import InputFile
 from telebot.util import extract_arguments, extract_command, quick_markup
 
+from .authenticate import Authenticator
 from .recorder import Recorder, RecordItem
 from .storage import DataBase
 from .utils import is_small_file, save_file
@@ -19,6 +20,7 @@ DATABASE: Final = config("DATABASE", default="botdb.json")
 bot = telebot.TeleBot(BOT_TOKEN)
 storage = DataBase(DATABASE)
 recorder = Recorder(DATABASE)
+auth = Authenticator(DATABASE)
 
 
 @bot.message_handler(commands=["start"])
@@ -27,6 +29,16 @@ def send_welcome(message):
         f"Hello, how are you doing?\n" f"You have recorded {recorder.size} messages!\n"
     )
     bot.send_message(message.chat.id, msg)
+
+
+@bot.message_handler(commands=["register"])
+def register(message):
+    if auth.is_registered(message.chat.id):
+        bot.send_message(message.chat.id, "You have already registered 🤖")
+    else:
+        auth.register(message.chat.id)
+        bot.send_message(message.chat.id, "Registered successfully 🎉")
+        storage.backup()
 
 
 @bot.message_handler(commands=["backup"])
