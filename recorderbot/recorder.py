@@ -62,6 +62,7 @@ class Recorder:
         Records with same timestamp will be overwritten.
         """
         doc_id = self.db.insert(item)
+        logging.info("new record of id {}: {}".format(doc_id, item))
         return doc_id
 
     def search(self, substr: str) -> RecordItem:
@@ -82,16 +83,11 @@ class Recorder:
             int: the newly added record count
         """
         db = TinyDB(path).table(self.tablename)
-        if len(db) == 0:
-            logging.warning("no valid data is in the source")
-            return
-        count = 0
         for item in db:
-            if self.exits(item):
-                continue
-            item = dict(item)  # remove doc_id
-            self.db.insert(item)
-            count += 1
-            logging.info("add record:", item)
+            if not self.exits(item):
+                self.record(dict(item))  # remove doc_id
+                count += 1
+                logging.info("add record:", item)
+        if count == 0:
+            logging.warning("no valid data is in the source")
         return count
-
