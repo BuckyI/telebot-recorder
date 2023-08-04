@@ -62,3 +62,36 @@ class WebDAV:
         raise NotImplementedError
 
 
+class DataBase:
+    """TinyDB management with WebDAV"""
+
+    def __init__(self, path: str = "db.json") -> None:
+        self.db_path = path
+        self.database = TinyDB(path)
+        self.webdav = WebDAV()
+
+    def backup(self) -> str:
+        """if WebDAV is available, backup the database"""
+        filename = "%s.json" % readable_time(format="YYYYMMDDHHmmss")
+        self.webdav.upload(self.db_path, filename)
+        return filename
+
+    def restore(self, path: str = None) -> int:
+        "return updated number"
+        if path is None:
+            path = "temp.json"
+            self.webdav.download_latest(path)
+
+        source_db = TinyDB(path)
+        dest_db = self.database
+
+        source_tables = (source_db.table(tb) for tb in source_db.tables())
+        dest_tables = (dest_db.table(tb) for tb in source_db.tables())
+        count = 0
+        for src, dst in zip(source_tables, dest_tables):
+            for doc in src:
+                print(doc, type(doc))
+                if not dst.contains(Query().fragment(doc)):
+                    dst.insert(dict(doc))  # removing doc id
+                    count += 1
+        return count
