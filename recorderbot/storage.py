@@ -57,3 +57,8 @@ class WebDAV:
         latest = max([i for i in self.client.list() if i.endswith(filter)])
         logging.info("latest file is %s" % latest)
         self.client.download(latest, dest)
+
+    def delete(self):
+        raise NotImplementedError
+
+
