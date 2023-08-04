@@ -52,21 +52,16 @@ class Recorder:
         self.db = TinyDB(db_path)
         self.db.default_table_name = self.tablename  # set table name of records
 
-        # TODO: make storage outside
-        try:
-            # use environment variables to initialize a WebDAV client
-            self.storage = WebDAV()
-        except Exception:
-            logging.warning("WebDAV initialization failed, can't backup.")
-            self.storage = None
-
     @property
     def size(self):
         return len(self.db)
 
     def record(self, item: RecordItem) -> int:
+        """
+        Add a record. Please avoid timestamp collision.
+        Records with same timestamp will be overwritten.
+        """
         doc_id = self.db.insert(item)
-        self.backup()
         return doc_id
 
     def search(self, substr: str) -> RecordItem:
@@ -98,28 +93,5 @@ class Recorder:
             self.db.insert(item)
             count += 1
             logging.info("add record:", item)
-        self.backup()
         return count
 
-    def merge_from_backup(self) -> int:
-        "return updated record count"
-        if not self.storage:
-            logging.error("you don't have a valid storage")
-            return
-        try:
-            self.storage.download_latest("temp.json")
-            count = self.merge("temp.json")
-            return count
-            # TODO: remove temp file
-        except Exception:
-            logging.error("the downloaded file may not be a valid backup")
-            return -1
-
-    def backup(self):
-        """if WebDAV is available, backup the database"""
-        if not self.storage:
-            logging.error("you don't have a valid storage")
-            return
-        filename = "%s.json" % readable_time(format="YYYYMMDDHHmmss")
-        self.storage.upload(self.db_path, filename)
-        return filename
