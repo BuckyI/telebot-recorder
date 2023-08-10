@@ -1,6 +1,8 @@
-from typing import Callable
+from functools import partial
+from typing import Callable, List
 
 import telebot
+from telebot.custom_filters import StateFilter
 from telebot.handler_backends import State, StatesGroup
 
 
@@ -22,6 +24,56 @@ class StepState(State):
         self.next = next
 
 
+class StepStatesGroup(StatesGroup):
+    """
+    Inherit this class, and add your states in the subclass
+    # Just name variables differently
+    name = StepState("1. Please enter Your name", "name")
+    surname = StepState("2. Please enter Your surname", "surname")
+    age = StepState("3. Please enter Your age", "age")
+    """
+
+    def __init_subclass__(cls) -> None:
+        super().__init_subclass__()
+        cls.states: List[StepState] = cls._state_list
+        cls.entry_state: StepState = cls.states[0]  # begin state
+        cls.last_state: StepState = cls.states[-1]  # end state
+        for i, j in zip(cls.states, cls.states[1:]):
+            i.next = j  # link states together
+
+    @classmethod
+    def register(cls, command: str, bot: telebot.TeleBot):
+        "setup states group, register message handlers to bot"
+
+        def start(message):
+            entry_state = cls.entry_state
+            bot.set_state(message.from_user.id, entry_state, message.chat.id)
+            bot.send_message(message.chat.id, entry_state.hint)
+
+        bot.register_message_handler(start, commands=[command])
+        for s in cls._state_list:
+            bot.register_message_handler(
+                partial(get_text, current_state=s, bot=bot, callback=cls.final),
+                state=s,
+            )
+        bot.add_custom_filter(StateFilter(bot))
+        return StepStatesGroup
+
+    @classmethod
+    def get_data(cls, raw_data: dict) -> dict:
+        "extract data belong to this states group"
+        return {state.key: raw_data.get(state.name, "") for state in cls.states}
+
+    @classmethod
+    def final(cls, data: dict) -> str:
+        """the final process to process full data when reaches the last state
+        data: the full data (should be given in outter procedures)
+        return: human readable information of process result
+        """
+        raise NotImplemented(f"Please inherit {cls.__name__} and implement final")
+
+
+# TODO: add confirmation (maybe it's a final state)
 def get_text(
     message, current_state: StepState, bot: telebot.TeleBot, callback: Callable
 ):
