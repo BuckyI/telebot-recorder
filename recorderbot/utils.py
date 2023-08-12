@@ -2,6 +2,7 @@ import os
 
 import arrow
 import requests
+import yaml
 
 
 def is_small_file(file_path: str) -> bool:
@@ -36,3 +37,7 @@ def save_file(url: str, filename="temp.txt"):
         for chunk in response.iter_content(chunk_size=1024):
             if chunk:
                 f.write(chunk)
+
+
+def load_yaml(path: str) -> dict:
+    return yaml.load(open(path), Loader=yaml.FullLoader) if os.path.exists(path) else {}
