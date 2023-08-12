@@ -1,11 +1,11 @@
 from .base import StepState, StepStatesGroup
 
 
-class UserInfo(StepStatesGroup):
-    # Just name variables differently
-    name = StepState("1. Please enter Your name", "name")
-    surname = StepState("2. Please enter Your surname", "surname")
-    age = StepState("3. Please enter Your age", "age")
+class UserInfo(StepStatesGroup, config_path="configs/userinfo.yaml"):
+    # # Just name variables differently
+    # name = StepState("1. Please enter Your name", "name")
+    # surname = StepState("2. Please enter Your surname", "surname")
+    # age = StepState("3. Please enter Your age", "age")
 
     @classmethod
     def final(cls, data: dict) -> str:

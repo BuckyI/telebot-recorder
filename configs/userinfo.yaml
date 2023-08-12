@@ -1,0 +1,6 @@
+description: "record userinfo (demo)"
+command: "userinfo"
+items:
+  name: "your user name"
+  surname: "your surname"
+  age: "your age (positive number)"

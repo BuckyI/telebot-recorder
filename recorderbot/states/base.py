@@ -5,6 +5,8 @@ import telebot
 from telebot.custom_filters import StateFilter
 from telebot.handler_backends import State, StatesGroup
 
+from ..utils import load_yaml
+
 
 class StepState(State):
     """
@@ -33,22 +35,42 @@ class StepStatesGroup(StatesGroup):
     age = StepState("3. Please enter Your age", "age")
     """
 
-    def __init_subclass__(cls) -> None:
-        super().__init_subclass__()
+    _registered: List = []
+
+    def __init_subclass__(cls, config_path=None) -> None:
+        cls.command: str | None = None
+        # WARNING: state name shouldn't be "command"
+        if config_path:  # load command and Sates from yaml file
+            configs = load_yaml(config_path)
+            cls.command = configs.get("command", None)
+            for name, description in configs.get("items", {}).items():
+                setattr(cls, name, StepState(description, name))
+
+        super().__init_subclass__()  # initialize super class
+
         cls.states: List[StepState] = cls._state_list
+        assert len(cls.states), f"no states defined in {cls.__name__}"
         cls.entry_state: StepState = cls.states[0]  # begin state
         cls.last_state: StepState = cls.states[-1]  # end state
         for i, j in zip(cls.states, cls.states[1:]):
             i.next = j  # link states together
 
     @classmethod
-    def register(cls, command: str, bot: telebot.TeleBot):
-        "setup states group, register message handlers to bot"
+    def register(cls, bot: telebot.TeleBot, command: str = None):
+        """setup states group, register message handlers to bot
+        bot: the telebot instance to register handlers
+        command: the command to enter this states group, default to None,
+        which will try to get `cls.command` from definition.
+        """
 
         def start(message):
             entry_state = cls.entry_state
             bot.set_state(message.from_user.id, entry_state, message.chat.id)
             bot.send_message(message.chat.id, entry_state.hint)
+
+        if command is None and cls.command is None:
+            raise ValueError("no valid command is given")
+        command = command if command else cls.command
 
         bot.register_message_handler(start, commands=[command])
         for s in cls._state_list:
@@ -57,7 +79,11 @@ class StepStatesGroup(StatesGroup):
                 state=s,
             )
         bot.add_custom_filter(StateFilter(bot))
-        return StepStatesGroup
+
+        # register to StepStatesGroup
+        cls.command = command
+        cls._registered.append(cls)
+        return cls
 
     @classmethod
     def get_data(cls, raw_data: dict) -> dict:
