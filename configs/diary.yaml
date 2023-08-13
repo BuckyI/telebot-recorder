@@ -1,4 +1,5 @@
 description: "record daily life and stuff"
 command: "diary"
+name: records
 items:
   content: "your recording"

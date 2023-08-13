@@ -1,5 +1,6 @@
 description: "record userinfo (demo)"
 command: "userinfo"
+name: "userinfo"
 items:
   name: "your user name"
   surname: "your surname"
