@@ -43,7 +43,8 @@ class Recorder:
         command = state_group.command_
 
         self.bot.register_message_handler(
-            partial(self.__enter, entry_state=state_group.entry_state), commands=[command]
+            partial(self.__enter, entry_state=state_group.entry_state),
+            commands=[command],
         )
         for s in state_group.states:
             self.bot.register_message_handler(
@@ -103,9 +104,9 @@ class Recorder:
             if query.data == "save":
                 with bot.retrieve_data(user_id, chat_id) as data:
                     table, result = data.get(ComStates.save.name)
-                    self.db.insert(result, table)
+                    doc_id = self.db.insert(result, table)
                     self.db.backup()  # backup to webdav
-                bot.edit_message_text(f"Record saved.", chat_id, message_id)
+                bot.edit_message_text(f"saved. ({doc_id})", chat_id, message_id)
             else:
                 bot.edit_message_text("deprecated.", chat_id, message_id)
             # clear state
