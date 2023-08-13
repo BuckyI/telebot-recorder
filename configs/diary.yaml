@@ -1,0 +1,4 @@
+description: "record daily life and stuff"
+command: "diary"
+items:
+  content: "your recording"

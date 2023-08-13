@@ -28,8 +28,10 @@ class StepState(State):
 
 class StepStatesGroup(StatesGroup):
     """
-    Inherit this class, and add your states in the subclass
-    # Just name variables differently
+    Describe a collection of states
+    Usage: inherit this class, and add your states in the subclass
+    or use config_path to load states
+    WARNING: state name shouldn't be "command", "timestamp"
     name = StepState("1. Please enter Your name", "name")
     surname = StepState("2. Please enter Your surname", "surname")
     age = StepState("3. Please enter Your age", "age")
@@ -38,8 +40,8 @@ class StepStatesGroup(StatesGroup):
     _registered: List = []
 
     def __init_subclass__(cls, config_path=None) -> None:
+        # TODO: improve variable name: all except states should start from _
         cls.command: str | None = None
-        # WARNING: state name shouldn't be "command"
         if config_path:  # load command and Sates from yaml file
             configs = load_yaml(config_path)
             cls.command = configs.get("command", None)
@@ -86,6 +88,12 @@ class StepStatesGroup(StatesGroup):
         return cls
 
     @classmethod
+    def get_state(cls, state_name: str) -> StepState:
+        for state in cls.states:
+            if state.name == state_name:
+                return state
+
+    @classmethod
     def get_data(cls, raw_data: dict) -> dict:
         "extract data belong to this states group"
         return {state.key: raw_data.get(state.name, "") for state in cls.states}
@@ -125,3 +133,7 @@ def get_text(
     else:
         bot.send_message(message.chat.id, next_state.hint)
         bot.set_state(message.from_user.id, next_state, message.chat.id)
+
+
+class ComStates(StatesGroup):
+    save = StepState("Finish & Save", "data")
