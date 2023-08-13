@@ -59,7 +59,7 @@ class WebDAV:
 
     def download_latest(self, dest: str, filter: str = ".json") -> None:
         latest = max([i for i in self.client.list() if i.endswith(filter)])
-        logging.info("latest file is %s" % latest)
+        logging.info("download latest file %s from webdav" % latest)
         self.client.download(latest, dest)
 
     def delete(self):
@@ -69,15 +69,33 @@ class WebDAV:
 class DataBase:
     """TinyDB management with WebDAV"""
 
-    def __init__(self, path: str = "db.json") -> None:
+    def __init__(self, path: str = "db.json", websync=True) -> None:
         self.db_path = path
         self.database = TinyDB(path)
-        self.webdav = WebDAV()
+        self.webdav = WebDAV() if websync else None
+
+    def insert(self, item: dict, table: str = None) -> int:
+        """
+        Add a record. Please avoid timestamp collision.
+        Records with same timestamp will be overwritten.
+        """
+        table = self.database.table(table) if table else self.database
+        doc_id = table.insert(item) if item else 0  # if item is empty, skip it
+        logging.info("new record of id {}: {}".format(doc_id, item))
+        return doc_id
+
+    def size_of(self, table: str = None) -> int:
+        table = self.database.table(table) if table else self.database
+        return len(table)
 
     def backup(self) -> str:
         """if WebDAV is available, backup the database"""
+        if self.webdav is None:
+            logging.error("WebDAV is not available")
+            return
         filename = "%s.json" % readable_time(format="YYYYMMDDHHmmss")
         self.webdav.upload(self.db_path, filename)
+        logging.error("backup %s to WebDAV", filename)
         return filename
 
     def restore(self, path: str = None) -> int:
@@ -86,6 +104,9 @@ class DataBase:
         return: updated item number
         """
         if path is None:
+            if self.webdav is None:
+                logging.error("WebDAV is not available")
+                return
             path = "temp.json"
             self.webdav.download_latest(path)
 
