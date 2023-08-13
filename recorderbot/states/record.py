@@ -26,6 +26,9 @@ class Recorder:
     def __init__(self, bot: telebot.TeleBot, db: DataBase) -> None:
         self.bot = bot
         self.db = db
+
+    def register_all(self):
+        # TODO: load from folder
         self.state_group = [UserInfo, Diary]
         for sg in self.state_group:
             self.register(sg)
@@ -36,15 +39,15 @@ class Recorder:
         command: the command to enter this states group, default to None,
         which will try to get `cls.command` from definition.
         """
-        assert state_group.command, "no valid command is given"
-        command = state_group.command
+        assert state_group.command_, "no valid command is given"
+        command = state_group.command_
 
         self.bot.register_message_handler(
-            partial(self.enter, entry_state=state_group.entry_state), commands=[command]
+            partial(self.__enter, entry_state=state_group.entry_state), commands=[command]
         )
         for s in state_group.states:
             self.bot.register_message_handler(
-                partial(self.move_on, current_state=s),
+                partial(self.__move_on, current_state=s),
                 state=s,
             )
         self.bot.add_custom_filter(StateFilter(self.bot))
@@ -53,11 +56,11 @@ class Recorder:
         state_group._registered.append(state_group)
         return state_group
 
-    def enter(self, message: Message, entry_state: StepState):
+    def __enter(self, message: Message, entry_state: StepState):
         self.bot.set_state(message.from_user.id, entry_state, message.chat.id)
         self.bot.send_message(message.chat.id, entry_state.hint)
 
-    def move_on(
+    def __move_on(
         self,
         message: Message,
         current_state: StepState,
@@ -78,10 +81,10 @@ class Recorder:
                 # save final data temporarily
                 final = current_state.group.get_data(data)
                 final["timestamp"] = message.date  # add time of record
-                data[next_state.name] = final
-                self.confirm_and_save(message.chat.id)
+                data[next_state.name] = (current_state.group.name_, final)
+                self.__confirm_and_save(message.chat.id)
 
-    def confirm_and_save(self, chat_id: int):
+    def __confirm_and_save(self, chat_id: int):
         markup = quick_markup(
             {
                 "OK 😇": {"callback_data": "save"},
@@ -98,13 +101,10 @@ class Recorder:
                 query.message.message_id,
             )
             if query.data == "save":
-                # retrieve stored data
                 with bot.retrieve_data(user_id, chat_id) as data:
-                    result = data.get(ComStates.save.name, {})
-                # save
-                # TODO: Not Implimented
-                with open("test.txt", "a+") as f:
-                    f.write(str(result))
+                    table, result = data.get(ComStates.save.name)
+                    self.db.insert(result, table)
+                    self.db.backup()  # backup to webdav
                 bot.edit_message_text(f"Record saved.", chat_id, message_id)
             else:
                 bot.edit_message_text("deprecated.", chat_id, message_id)
