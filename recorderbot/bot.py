@@ -10,6 +10,8 @@ from telebot.util import extract_arguments, extract_command, quick_markup
 
 from .authenticate import Authenticator
 from .recorder import Recorder, RecordItem
+from .states.record import Recorder as StateRecorder
+from .states.record import SecondThought
 from .storage import DataBase
 from .utils import is_small_file, save_file
 
@@ -21,6 +23,9 @@ bot = telebot.TeleBot(BOT_TOKEN)
 storage = DataBase(DATABASE)
 recorder = Recorder(DATABASE)
 auth = Authenticator(DATABASE)
+
+state_recorder = StateRecorder(bot, storage)
+state_recorder.register([SecondThought])
 
 
 @bot.message_handler(commands=["start"])

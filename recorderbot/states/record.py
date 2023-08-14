@@ -22,39 +22,45 @@ class Diary(StepStatesGroup, config_path="configs/diary.yaml"):
     pass
 
 
+class SecondThought(StepStatesGroup, config_path="configs/secondthought.yaml"):
+    pass
+
+
 class Recorder:
     def __init__(self, bot: telebot.TeleBot, db: DataBase) -> None:
         self.bot = bot
         self.db = db
 
-    def register_all(self):
+    def register(self, state_groups: List[StepStatesGroup]):
         # TODO: load from folder
-        self.state_group = [UserInfo, Diary]
+        self.state_group = state_groups
         for sg in self.state_group:
-            self.register(sg)
+            self.register_command(sg)
+            sg._registered.append(sg)  # register to StepStatesGroup
+        for sg in self.state_group:
+            self.register_states(sg)
 
-    def register(self, state_group: StepStatesGroup):
+        self.bot.add_custom_filter(StateFilter(self.bot))
+
+    def register_command(self, state_group: StepStatesGroup):
+        "make sure command is registered first"
+        assert state_group.command_, "no valid command is given"
+        self.bot.register_message_handler(
+            partial(self.__enter, entry_state=state_group.entry_state),
+            commands=[state_group.command_],
+        )
+
+    def register_states(self, state_group: StepStatesGroup):
         """setup states group, register message handlers to bot
         bot: the telebot instance to register handlers
         command: the command to enter this states group, default to None,
         which will try to get `cls.command` from definition.
         """
-        assert state_group.command_, "no valid command is given"
-        command = state_group.command_
-
-        self.bot.register_message_handler(
-            partial(self.__enter, entry_state=state_group.entry_state),
-            commands=[command],
-        )
         for s in state_group.states:
             self.bot.register_message_handler(
                 partial(self.__move_on, current_state=s),
                 state=s,
             )
-        self.bot.add_custom_filter(StateFilter(self.bot))
-
-        # register to StepStatesGroup
-        state_group._registered.append(state_group)
         return state_group
 
     def __enter(self, message: Message, entry_state: StepState):
