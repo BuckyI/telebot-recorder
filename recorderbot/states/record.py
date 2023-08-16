@@ -14,29 +14,20 @@ from ..storage import DataBase
 from .base import ComStates, StepState, StepStatesGroup
 
 
-class UserInfo(StepStatesGroup, config_path="configs/userinfo.yaml"):
-    pass
-
-
-class Diary(StepStatesGroup, config_path="configs/diary.yaml"):
-    pass
-
-
-class SecondThought(StepStatesGroup, config_path="configs/secondthought.yaml"):
-    pass
-
-
 class Recorder:
-    def __init__(self, bot: telebot.TeleBot, db: DataBase) -> None:
+    def __init__(
+        self, bot: telebot.TeleBot, db: DataBase, states: List[StepStatesGroup]
+    ) -> None:
         self.bot = bot
         self.db = db
+        self.state_group: List[StepStatesGroup] = []
+        self.register(states)
 
     def register(self, state_groups: List[StepStatesGroup]):
-        # TODO: load from folder
-        self.state_group = state_groups
+        self.state_group.extend(state_groups)  # update state_groups
+        # register commands first so you can change states in middle states
         for sg in self.state_group:
             self.register_command(sg)
-            sg._registered.append(sg)  # register to StepStatesGroup
         for sg in self.state_group:
             self.register_states(sg)
 
@@ -44,10 +35,10 @@ class Recorder:
 
     def register_command(self, state_group: StepStatesGroup):
         "make sure command is registered first"
-        assert state_group.command_, "no valid command is given"
+        assert state_group.command, "no valid command is given"
         self.bot.register_message_handler(
             partial(self.__enter, entry_state=state_group.entry_state),
-            commands=[state_group.command_],
+            commands=[state_group.command],
         )
 
     def register_states(self, state_group: StepStatesGroup):
@@ -56,7 +47,7 @@ class Recorder:
         command: the command to enter this states group, default to None,
         which will try to get `cls.command` from definition.
         """
-        for s in state_group.states:
+        for s in state_group.state_list:
             self.bot.register_message_handler(
                 partial(self.__move_on, current_state=s),
                 state=s,
@@ -88,7 +79,7 @@ class Recorder:
                 # save final data temporarily
                 final = current_state.group.get_data(data)
                 final["timestamp"] = message.date  # add time of record
-                data[next_state.name] = (current_state.group.name_, final)
+                data[next_state.name] = (current_state.group.name, final)
                 self.__confirm_and_save(message.chat.id)
 
     def __confirm_and_save(self, chat_id: int):

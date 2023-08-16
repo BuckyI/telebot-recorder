@@ -18,17 +18,20 @@ class StepState(State):
     next: next state, defaults to None
     """
 
-    def __init__(self, hint: str, key: str, next: "StepState" = None) -> None:
-        self.name = None  # it will be defiled in StatesGroup
-        self.group: StatesGroup = None  # it will be defiled in StatesGroup
+    def __init__(self, hint: str, key: str) -> None:
         self.hint = hint
         self.key = key
-        self.next = next
+        # inter state property
+        self.next = None
+        # group related property
+        self.group = None
+        self.name = None
 
 
-class StepStatesGroup(StatesGroup):
+class StepStatesGroup:
     """
-    Describe a collection of states
+    Class representing common states.
+    [refer to: telebot.handler_backends.StatesGroup ]
     Usage: inherit this class, and use config_path to load states
     WARNING: state name shouldn't be "command", "timestamp"
     name = StepState("1. Please enter Your name", "name")
@@ -36,36 +39,54 @@ class StepStatesGroup(StatesGroup):
     age = StepState("3. Please enter Your age", "age")
     """
 
-    _registered: List = []
-
-    def __init_subclass__(cls, config_path) -> None:
-        # TODO: improve variable name: all except states should start from _
-        # load command and Sates from yaml file
+    def __init__(self, name: str, config_path: str) -> None:
         configs = load_yaml(config_path)
-        cls.command_: str = configs["command"]
-        cls.name_: str = configs["name"]
-        for name, description in configs.get("items", {}).items():
-            setattr(cls, name, StepState(description, name))
+        self._command: str = configs["command"]
+        self._name: str = configs["name"]
+        self._state_list: List[StepState] = []
 
-        super().__init_subclass__()  # initialize super class
-
-        cls.states: List[StepState] = cls._state_list
-        assert len(cls.states), f"no states defined in {cls.__name__}"
-        cls.entry_state: StepState = cls.states[0]  # begin state
-        cls.last_state: StepState = cls.states[-1]  # end state
-        for i, j in zip(cls.states, cls.states[1:]):
+        for name, description in configs["items"].items():
+            state = StepState(description, name)
+            state.group = self
+            state.name = f"{self.name}:{name}"
+            setattr(self, name, state)
+            self._state_list.append(state)
+        
+        
+        for i, j in zip(self._state_list, self._state_list[1:]):
             i.next = j  # link states together
 
-    @classmethod
-    def get_state(cls, state_name: str) -> StepState:
-        for state in cls.states:
+    @property
+    def name(self) -> str:
+        "state group name"
+        return self._name
+
+    @property
+    def command(self) -> str:
+        "command to enter this states group"
+        return self._command
+
+    @property
+    def state_list(self) -> List[StepState]:
+        "states of this group"
+        return self._state_list
+
+    @property
+    def entry_state(self) -> StepState:
+        return self._state_list[0]  # begin state
+
+    @property
+    def last_state(self) -> StepState:
+        return self._state_list[-1]  # end state
+
+    def get_state(self, state_name: str) -> StepState:
+        for state in self.state_list:
             if state.name == state_name:
                 return state
 
-    @classmethod
-    def get_data(cls, raw_data: dict) -> dict:
+    def get_data(self, raw_data: dict) -> dict:
         "extract data belong to this states group"
-        return {state.key: raw_data.get(state.name, "") for state in cls.states}
+        return {state.key: raw_data.get(state.name, "") for state in self.state_list}
 
 
 class ComStates(StatesGroup):

@@ -11,7 +11,7 @@ from telebot.util import extract_arguments, extract_command, quick_markup
 from .authenticate import Authenticator
 from .recorder import Recorder, RecordItem
 from .states.record import Recorder as StateRecorder
-from .states.record import SecondThought
+from .states.record import StepStatesGroup
 from .storage import DataBase
 from .utils import is_small_file, save_file
 
@@ -24,8 +24,9 @@ storage = DataBase(DATABASE)
 recorder = Recorder(DATABASE)
 auth = Authenticator(DATABASE)
 
-state_recorder = StateRecorder(bot, storage)
-state_recorder.register([SecondThought])
+state_recorder = StateRecorder(
+    bot, storage, [StepStatesGroup("SecondThought", "configs/secondthought.yaml")]
+)
 
 
 @bot.message_handler(commands=["start"])
@@ -160,10 +161,6 @@ def record(message):
         record_callback,
         lambda query: query.data in ["save record", "drop record"],
     )
-
-
-# TODO: ADD TAGS
-# TODO: HOSTING ON A WEB SERVER
 
 
 # Handle all other messages.
