@@ -78,11 +78,13 @@ class Recorder:
                 bot.set_state(message.from_user.id, next_state, message.chat.id)
                 bot.send_message(message.chat.id, next_state.hint)
             else:  # all states finished, check & save them
-                bot.set_state(message.from_user.id, ComStates.save, message.chat.id)
                 final = current_state.group.get_data(data)
                 final["timestamp"] = message.date  # add time of record
                 self.__confirm_and_save(
-                    message.chat.id, current_state.group.name, final
+                    message.chat.id,
+                    message.from_user.id,
+                    current_state.group.name,
+                    final,
                 )
 
     def __default(self, message: Message, default_table: str = "records"):
@@ -91,21 +93,29 @@ class Recorder:
         bot.set_state(message.from_user.id, ComStates.save, message.chat.id)
         # save final data temporarily
         final = {"timestamp": message.date, "content": message.text}
-        self.__confirm_and_save(message.chat.id, default_table, final)
+        self.__confirm_and_save(
+            message.chat.id, message.from_user.id, default_table, final
+        )
 
-    def __confirm_and_save(self, chat_id: int, table: str, data: dict):
+    def __confirm_and_save(self, chat_id: int, user_id: int, table: str, data: dict):
         """
         chat_id: comfirm in this chat
         table: table to insert data
         data: the dict like data to save
         """
+        bot: telebot.TeleBot = self.bot
+        # save data tempororily
+        save_state = ComStates.save
+        bot.set_state(user_id, save_state, chat_id)
+        with bot.retrieve_data(user_id, chat_id) as user_data:
+            user_data[save_state.name] = data  # use name to store data
+        # send confirm message
         markup = quick_markup(
             {
                 "OK 😇": {"callback_data": "save"},
                 "No ❗": {"callback_data": "drop"},
             }
         )
-        bot: telebot.TeleBot = self.bot
         bot.send_message(chat_id, f"Confirm whether to record", reply_markup=markup)
 
         def callback(query: CallbackQuery):
@@ -115,7 +125,8 @@ class Recorder:
                 query.message.message_id,
             )
             if query.data == "save":
-                doc_id = self.db.insert(data, table)
+                with bot.retrieve_data(user_id, chat_id) as user_data:
+                    doc_id = self.db.insert(user_data[save_state.name], table)
                 self.db.backup()  # backup to webdav
                 logging.info("backup after new record added via webdav")
                 bot.edit_message_text(f"saved. ({doc_id})", chat_id, message_id)
