@@ -18,7 +18,6 @@ DATABASE: Final = config("DATABASE", default="botdb.json")
 
 bot = telebot.TeleBot(BOT_TOKEN)
 storage = DataBase(DATABASE)
-auth = Authenticator(DATABASE)
 
 
 ## first level commands
@@ -33,16 +32,6 @@ def send_welcome(message):
 @bot.message_handler(commands=["debug"])
 def debug(message):
     bot.send_message(message.chat.id, str(message))
-
-
-@bot.message_handler(commands=["register"])
-def register(message):
-    if auth.is_registered(message.chat.id):
-        bot.send_message(message.chat.id, "You have already registered 🤖")
-    else:
-        auth.register(message.chat.id)
-        bot.send_message(message.chat.id, "Registered successfully 🎉")
-        storage.backup()
 
 
 @bot.message_handler(commands=["backup"])

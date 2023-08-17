@@ -4,6 +4,7 @@ from typing import Final
 
 from decouple import config
 
+from recorderbot.authenticate import Authenticator
 from recorderbot.bot import bot, storage
 from recorderbot.states.record import Recorder, StepStatesGroup
 
@@ -17,8 +18,12 @@ if __name__ == "__main__":
         os.environ["https_proxy"] = HTTPS_PROXY
 
     # register
+    auth = Authenticator(bot, storage)
+    auth.register_command("register")
+
     recorder = Recorder(bot, storage)
     recorder.register(["configs/secondthought.yaml"])
+    # WARNING: recorder 会接收所有 text 类型的消息，不要在此之后 register
 
     # initialize database, restore data from webdav backup
     storage.restore()

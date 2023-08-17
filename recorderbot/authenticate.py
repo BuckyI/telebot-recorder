@@ -1,21 +1,28 @@
+import telebot
 from tinydb import Query, TinyDB
+
+from .storage import DataBase
 
 
 class Authenticator:
     tablename = "register_info"
 
-    def __init__(self, db_path: str = "db.json") -> None:
-        self.db_path = db_path
-        self.db = TinyDB(db_path)
-        self.db.default_table_name = self.tablename  # set default table
+    def __init__(self, bot: telebot.TeleBot, db: DataBase) -> None:
+        self.bot = bot
+        self.db = db
+        self.table = db.database.table(self.tablename)  # use table
 
-    def register(self, chat_id: int) -> int:
-        """
-        Add a record. Please avoid timestamp collision.
-        Records with same timestamp will be overwritten.
-        """
-        doc_id = self.db.insert({"chat_id": chat_id})
-        return doc_id
+    def register_command(self, command: str = "register"):
+        self.bot.register_message_handler(self.register, commands=[command])
+
+    def register(self, message: telebot.types.Message):
+        bot: telebot.TeleBot = self.bot
+        if self.is_registered(message.chat.id):
+            bot.send_message(message.chat.id, "You have already registered 🤖")
+        else:
+            doc_id = self.db.insert({"chat_id": message.chat.id}, self.tablename)
+            bot.send_message(message.chat.id, f"Registered successfully 🎉 ({doc_id})")
+            self.db.backup()
 
     def is_registered(self, chat_id: int) -> bool:
-        return self.db.contains(Query().chat_id == chat_id)
+        return self.table.contains(Query().chat_id == chat_id)
