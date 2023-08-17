@@ -74,6 +74,11 @@ class DataBase:
         self.database = TinyDB(path)
         self.webdav = WebDAV() if websync else None
 
+    @property
+    def status(self):
+        db = self.database
+        return {t: len(db.table(t)) for t in db.tables()}
+
     def insert(self, item: dict, table: str = None) -> int:
         """
         Add a record. Please avoid timestamp collision.

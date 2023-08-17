@@ -19,13 +19,13 @@ class StepState(State):
     """
 
     def __init__(self, hint: str, key: str) -> None:
-        self.hint = hint
-        self.key = key
+        self.hint: str = hint
+        self.key: str = key
         # inter state property
-        self.next = None
+        self.next: "StepState" = None
         # group related property
-        self.group = None
-        self.name = None
+        self.group: "StepStatesGroup" = None
+        self.name: str = None
 
 
 class StepStatesGroup:
@@ -51,8 +51,7 @@ class StepStatesGroup:
             state.name = f"{self.name}:{name}"
             setattr(self, name, state)
             self._state_list.append(state)
-        
-        
+
         for i, j in zip(self._state_list, self._state_list[1:]):
             i.next = j  # link states together
 

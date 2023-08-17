@@ -15,13 +15,10 @@ from .base import ComStates, StepState, StepStatesGroup
 
 
 class Recorder:
-    def __init__(
-        self, bot: telebot.TeleBot, db: DataBase, states: List[StepStatesGroup]
-    ) -> None:
+    def __init__(self, bot: telebot.TeleBot, db: DataBase) -> None:
         self.bot = bot
         self.db = db
         self.state_group: List[StepStatesGroup] = []
-        self.register(states)
 
     def register(self, state_groups: List[StepStatesGroup]):
         self.state_group.extend(state_groups)  # update state_groups
@@ -30,6 +27,10 @@ class Recorder:
             self.register_command(sg)
         for sg in self.state_group:
             self.register_states(sg)
+
+        # By default, save to "records" table if no state is specified
+        self.bot.register_message_handler(self.__default)
+        self.state_group.append("records")
 
         self.bot.add_custom_filter(StateFilter(self.bot))
 
@@ -74,15 +75,27 @@ class Recorder:
                 bot.set_state(message.from_user.id, next_state, message.chat.id)
                 bot.send_message(message.chat.id, next_state.hint)
             else:  # all states finished, check & save them
-                next_state = ComStates.save
-                bot.set_state(message.from_user.id, next_state, message.chat.id)
-                # save final data temporarily
+                bot.set_state(message.from_user.id, ComStates.save, message.chat.id)
                 final = current_state.group.get_data(data)
                 final["timestamp"] = message.date  # add time of record
-                data[next_state.name] = (current_state.group.name, final)
-                self.__confirm_and_save(message.chat.id)
+                self.__confirm_and_save(
+                    message.chat.id, current_state.group.name, final
+                )
 
-    def __confirm_and_save(self, chat_id: int):
+    def __default(self, message: Message, default_table: str = "records"):
+        "default record behavior if no specific state is set"
+        bot: telebot.TeleBot = self.bot
+        bot.set_state(message.from_user.id, ComStates.save, message.chat.id)
+        # save final data temporarily
+        final = {"timestamp": message.date, "content": message.text}
+        self.__confirm_and_save(message.chat.id, default_table, final)
+
+    def __confirm_and_save(self, chat_id: int, table: str, data: dict):
+        """
+        chat_id: comfirm in this chat
+        table: table to insert data
+        data: the dict like data to save
+        """
         markup = quick_markup(
             {
                 "OK 😇": {"callback_data": "save"},
@@ -99,10 +112,9 @@ class Recorder:
                 query.message.message_id,
             )
             if query.data == "save":
-                with bot.retrieve_data(user_id, chat_id) as data:
-                    table, result = data.get(ComStates.save.name)
-                    doc_id = self.db.insert(result, table)
-                    self.db.backup()  # backup to webdav
+                doc_id = self.db.insert(data, table)
+                self.db.backup()  # backup to webdav
+                logging.info("backup after new record added via webdav")
                 bot.edit_message_text(f"saved. ({doc_id})", chat_id, message_id)
             else:
                 bot.edit_message_text("deprecated.", chat_id, message_id)
