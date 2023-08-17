@@ -6,12 +6,11 @@ from typing import Callable, List
 import telebot
 from decouple import config
 from telebot.custom_filters import StateFilter
-from telebot.handler_backends import State, StatesGroup
 from telebot.types import CallbackQuery, InputFile, Message
 from telebot.util import extract_arguments, extract_command, quick_markup
 
-from ..storage import DataBase
-from .base import ComStates, StepState, StepStatesGroup
+from ..states.base import ComStates, StepState, StepStatesGroup
+from .storage import DataBase
 
 
 class Recorder:

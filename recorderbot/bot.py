@@ -8,8 +8,7 @@ from decouple import config
 from telebot.types import InputFile
 from telebot.util import extract_arguments, extract_command, quick_markup
 
-from .authenticate import Authenticator
-from .storage import DataBase
+from .components import DataBase
 from .utils import is_small_file, save_file
 
 BOT_TOKEN: Final = config("BOT_TOKEN", default="")

@@ -4,9 +4,8 @@ from typing import Final
 
 from decouple import config
 
-from recorderbot.authenticate import Authenticator
 from recorderbot.bot import bot, storage
-from recorderbot.states.record import Recorder, StepStatesGroup
+from recorderbot.components import Authenticator, Recorder
 
 if __name__ == "__main__":
     logging.basicConfig(

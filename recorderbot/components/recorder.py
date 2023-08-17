@@ -1,11 +1,13 @@
+"""
+This is meant to be deprecated
+"""
 import logging
 import re
 from typing import Any, List
 
 from tinydb import Query, TinyDB
 
-from .storage import WebDAV
-from .utils import readable_time
+from ..utils import readable_time
 
 
 class RecordItem(dict):

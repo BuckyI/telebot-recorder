@@ -7,7 +7,7 @@ from decouple import config
 from tinydb import Query, TinyDB
 from webdav3.client import Client
 
-from .utils import readable_time
+from ..utils import readable_time
 
 HOSTNAME: Final = config("WEBDAV_HOSTNAME", default="")
 USERNAME: Final = config("WEBDAV_USERNAME", default="")
