@@ -15,10 +15,10 @@ if __name__ == "__main__":
     HTTPS_PROXY: Final = config("HTTPS_PROXY", default="")
     if HTTPS_PROXY:
         os.environ["https_proxy"] = HTTPS_PROXY
-    
+
     # register
     recorder = Recorder(bot, storage)
-    recorder.register([StepStatesGroup("SecondThought", "configs/secondthought.yaml")])
+    recorder.register(["configs/secondthought.yaml"])
 
     # initialize database, restore data from webdav backup
     storage.restore()

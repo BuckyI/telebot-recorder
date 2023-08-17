@@ -32,14 +32,14 @@ class StepStatesGroup:
     """
     Class representing common states.
     [refer to: telebot.handler_backends.StatesGroup ]
-    Usage: inherit this class, and use config_path to load states
-    WARNING: state name shouldn't be "command", "timestamp"
+    use config_path to load states
+    WARNING: state name shouldn't conflict with reserved property
     name = StepState("1. Please enter Your name", "name")
     surname = StepState("2. Please enter Your surname", "surname")
     age = StepState("3. Please enter Your age", "age")
     """
 
-    def __init__(self, name: str, config_path: str) -> None:
+    def __init__(self, config_path: str) -> None:
         configs = load_yaml(config_path)
         self._command: str = configs["command"]
         self._name: str = configs["name"]
@@ -54,6 +54,9 @@ class StepStatesGroup:
 
         for i, j in zip(self._state_list, self._state_list[1:]):
             i.next = j  # link states together
+
+    def __str__(self) -> str:
+        return f"StepStatesGroup {self.name}"
 
     @property
     def name(self) -> str:
