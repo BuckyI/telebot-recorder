@@ -1,7 +1,7 @@
 import logging
 from functools import partial
 from pathlib import Path
-from typing import Callable, List
+from typing import Callable, List, NamedTuple
 
 import telebot
 from decouple import config
@@ -11,6 +11,8 @@ from telebot.util import extract_arguments, extract_command, quick_markup
 
 from ..states.base import ComStates, StepState, StepStatesGroup
 from .storage import DataBase
+
+Record = NamedTuple("Record", [("table", str), ("data", dict)])
 
 
 class Recorder:
@@ -83,21 +85,23 @@ class Recorder:
             self.__confirm_and_save(
                 message.chat.id,
                 message.from_user.id,
-                current_state.group.name,
-                final,
+                Record(current_state.group.name, final),
             )
 
     def __default(self, message: Message, default_table: str = "records"):
         "default record behavior if no specific state is set"
         bot: telebot.TeleBot = self.bot
         bot.set_state(message.from_user.id, ComStates.save, message.chat.id)
-        # save final data temporarily
-        final = {"timestamp": message.date, "content": message.text}
-        self.__confirm_and_save(
-            message.chat.id, message.from_user.id, default_table, final
+        record = Record(
+            default_table,
+            {
+                "timestamp": message.date,
+                "content": message.text,
+            },
         )
+        self.__confirm_and_save(message.chat.id, message.from_user.id, record)
 
-    def __confirm_and_save(self, chat_id: int, user_id: int, table: str, data: dict):
+    def __confirm_and_save(self, chat_id: int, user_id: int, data: Record):
         """
         chat_id: comfirm in this chat
         table: table to insert data
@@ -126,7 +130,8 @@ class Recorder:
             )
             if query.data == "save":
                 with bot.retrieve_data(user_id, chat_id) as user_data:
-                    doc_id = self.db.insert(user_data[save_state.name], table)
+                    record: Record = user_data[save_state.name]
+                    doc_id = self.db.insert(record.data, record.table)
                 self.db.backup()  # backup to webdav
                 logging.info("backup after new record added via webdav")
                 bot.edit_message_text(f"saved. ({doc_id})", chat_id, message_id)
