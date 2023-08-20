@@ -73,19 +73,19 @@ class Recorder:
         # save & retrieve data
         with bot.retrieve_data(message.from_user.id, message.chat.id) as data:
             data[current_state.name] = text  # use name to store data
-            # move on to next step
-            if next_state:
-                bot.set_state(message.from_user.id, next_state, message.chat.id)
-                bot.send_message(message.chat.id, next_state.hint)
-            else:  # all states finished, check & save them
-                final = current_state.group.get_data(data)
-                final["timestamp"] = message.date  # add time of record
-                self.__confirm_and_save(
-                    message.chat.id,
-                    message.from_user.id,
-                    current_state.group.name,
-                    final,
-                )
+        # move on to next step
+        if next_state:
+            bot.set_state(message.from_user.id, next_state, message.chat.id)
+            bot.send_message(message.chat.id, next_state.hint)
+        else:  # all states finished, check & save them
+            final = current_state.group.get_data(data)
+            final["timestamp"] = message.date  # add time of record
+            self.__confirm_and_save(
+                message.chat.id,
+                message.from_user.id,
+                current_state.group.name,
+                final,
+            )
 
     def __default(self, message: Message, default_table: str = "records"):
         "default record behavior if no specific state is set"
