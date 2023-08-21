@@ -7,6 +7,7 @@ import telebot
 from decouple import config
 from telebot.types import InputFile
 from telebot.util import extract_arguments, extract_command, quick_markup
+from telegram_text import Bold, Chain, PlainText, TOMLSection, UnorderedList
 
 from .components import DataBase
 from .utils import is_small_file, save_file
@@ -24,8 +25,25 @@ storage = DataBase(DATABASE)
 
 @bot.message_handler(commands=["start"])
 def send_welcome(message):
-    msg = f"Hello, how are you doing?\n{storage.status}"
-    bot.send_message(message.chat.id, msg)
+    commands = set()
+    for handler in bot.message_handlers:
+        if cmds := handler.get("filters", {}).get("commands"):
+            commands = commands.union(cmds)
+
+    msg = Chain(
+        PlainText("Hello, how are you doing?"),
+        TOMLSection(
+            "all records",
+            UnorderedList(
+                *[Bold(k) + PlainText(f": {v}") for k, v in storage.status.items()]
+            ),
+        ),
+        TOMLSection(
+            "avaliable commands", UnorderedList(*[PlainText(cmd) for cmd in commands])
+        ),
+        sep="\n\n",
+    )
+    bot.send_message(message.chat.id, msg.to_markdown(), parse_mode="MarkdownV2")
 
 
 @bot.message_handler(commands=["debug"])
