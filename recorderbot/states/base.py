@@ -41,8 +41,10 @@ class StepStatesGroup:
 
     def __init__(self, config_path: str) -> None:
         configs = load_yaml(config_path)
-        self._command: str = configs["command"]
-        self._name: str = configs["name"]
+        assert all(
+            key in configs for key in ["command", "name", "description", "items"]
+        ), f"configuration {config_path} incomplete!"
+        self._cfg = configs
         self._state_list: List[StepState] = []
 
         for name, description in configs["items"].items():
@@ -61,12 +63,17 @@ class StepStatesGroup:
     @property
     def name(self) -> str:
         "state group name"
-        return self._name
+        return self._cfg["name"]
 
     @property
     def command(self) -> str:
         "command to enter this states group"
-        return self._command
+        return self._cfg["command"]
+
+    @property
+    def description(self) -> str:
+        "description of this states group"
+        return self._cfg["description"]
 
     @property
     def state_list(self) -> List[StepState]:
