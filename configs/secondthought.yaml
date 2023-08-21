@@ -1,6 +1,7 @@
 description: "Practice second thought on your automatic thoughts"
 command: "help"
 name: "second-thoughts"
+enable: true
 items:
   situation: "发生了什么事情？"
   mood: "在这种情况下，你的情绪如何？程度怎样？（非常厉害，一般，轻微）"

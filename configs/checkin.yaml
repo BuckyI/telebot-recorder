@@ -1,0 +1,9 @@
+description: "raise awareness of my life, just take it easy"
+command: "check"
+name: "daily-check-in"
+enable: true
+items:
+  feel: "你感觉今天怎么样？"
+  success: "今天什么事情做的比较顺利或效果比较好？原因是什么？"
+  problems: "今天遇到什么问题？可以怎样尝试解决呢？"
+  plan: "说出一个你一直想做但是没有时间去做的事情，并尝试分析一下你可以怎么做。"
