@@ -21,7 +21,7 @@ if __name__ == "__main__":
     auth.register_command("register")
 
     recorder = Recorder(bot, storage)
-    recorder.register(["configs/secondthought.yaml"])
+    recorder.register("configs/")
     # WARNING: recorder 会接收所有 text 类型的消息，不要在此之后 register
 
     # initialize database, restore data from webdav backup

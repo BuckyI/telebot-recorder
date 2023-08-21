@@ -1,5 +1,6 @@
 from functools import partial
-from typing import Callable, List
+from pathlib import Path
+from typing import Callable, Iterator, List
 
 import telebot
 from telebot.custom_filters import StateFilter
@@ -39,11 +40,12 @@ class StepStatesGroup:
     age = StepState("3. Please enter Your age", "age")
     """
 
-    def __init__(self, config_path: str) -> None:
-        configs = load_yaml(config_path)
-        assert all(
-            key in configs for key in ["command", "name", "description", "items"]
-        ), f"configuration {config_path} incomplete!"
+    def __init__(self, configs: str | dict) -> None:
+        if isinstance(configs, str):
+            configs = load_yaml(configs)  # load from file path
+        elif isinstance(configs, dict):
+            configs = configs  # load from dict
+        assert self.validate_config(configs), "configuration incomplete!"
         self._cfg = configs
         self._state_list: List[StepState] = []
 
@@ -52,7 +54,7 @@ class StepStatesGroup:
             # add suffix of description
             description = f"{description} ({step_idx}/{step_total})"
             step_idx += 1
-            
+
             state = StepState(description, name)
             state.group = self
             state.name = f"{self.name}:{name}"
@@ -101,6 +103,20 @@ class StepStatesGroup:
     def get_data(self, raw_data: dict) -> dict:
         "extract data belong to this states group"
         return {state.key: raw_data.get(state.name, "") for state in self.state_list}
+
+    @classmethod
+    def validate_config(cls, cfg: dict) -> bool:
+        return all(key in cfg for key in ["command", "name", "description", "items"])
+
+    @classmethod
+    def validated_configs(cls, path: str) -> Iterator[dict]:
+        "search for valid yaml file to load StatesGroup"
+        for f in Path(path).glob("*.yaml"):
+            cfg = load_yaml(str(f))
+            if not cfg.get("enable", False):
+                continue  # 对文件夹扫描时，额外通过 enable 选项过滤
+            if cls.validate_config(cfg):
+                yield cfg
 
 
 class ComStates(StatesGroup):

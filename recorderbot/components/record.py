@@ -22,11 +22,11 @@ class Recorder:
         self.db = db
         self.state_group: List[StepStatesGroup] = []
 
-    def register(self, group_configs: List[str]):
-        groups = [StepStatesGroup(cfg) for cfg in group_configs]
-        # update state_groups
-        self.state_group.extend(groups)
-        logging.info("groups registered: %s", [str(g) for g in self.state_group])
+    def register(self, cfg_path: str):
+        for group_cfg in StepStatesGroup.validated_configs(cfg_path):
+            group = StepStatesGroup(group_cfg)
+            self.state_group.append(group)
+            logging.info("group registered: %s", group.name)
 
         # register commands first so you can change states in middle states
         for sg in self.state_group:
