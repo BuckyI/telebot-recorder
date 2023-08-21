@@ -8,6 +8,7 @@ from decouple import config
 from telebot.custom_filters import StateFilter
 from telebot.types import CallbackQuery, InputFile, Message
 from telebot.util import extract_arguments, extract_command, quick_markup
+from telegram_text import Bold, Chain, PlainText, Underline
 
 from ..states.base import ComStates, StepState, StepStatesGroup
 from .storage import DataBase
@@ -41,7 +42,6 @@ class Recorder:
 
     def register_command(self, state_group: StepStatesGroup):
         "make sure command is registered first"
-        assert state_group.command, "no valid command is given"
         self.bot.register_message_handler(
             partial(self.__enter, entry_state=state_group.entry_state),
             commands=[state_group.command],
@@ -61,6 +61,12 @@ class Recorder:
         return state_group
 
     def __enter(self, message: Message, entry_state: StepState):
+        msg = Chain(
+            Bold("Start a New Record:"),
+            PlainText(entry_state.group.description),
+            sep="\n",
+        )
+        self.bot.send_message(message.chat.id, msg.to_markdown(), parse_mode="Markdown")
         self.bot.set_state(message.from_user.id, entry_state, message.chat.id)
         self.bot.send_message(message.chat.id, entry_state.hint)
 

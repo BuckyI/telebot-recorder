@@ -47,7 +47,12 @@ class StepStatesGroup:
         self._cfg = configs
         self._state_list: List[StepState] = []
 
+        step_idx, step_total = 1, len(configs["items"])
         for name, description in configs["items"].items():
+            # add suffix of description
+            description = f"{description} ({step_idx}/{step_total})"
+            step_idx += 1
+            
             state = StepState(description, name)
             state.group = self
             state.name = f"{self.name}:{name}"
