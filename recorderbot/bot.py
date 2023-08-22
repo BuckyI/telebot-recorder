@@ -7,7 +7,7 @@ import telebot
 from decouple import config
 from telebot.types import InputFile
 from telebot.util import extract_arguments, extract_command, quick_markup
-from telegram_text import Bold, Chain, PlainText, TOMLSection, UnorderedList
+from telegram_text import Bold, Chain, Code, PlainText, TOMLSection, UnorderedList
 
 from .components import DataBase
 from .utils import is_small_file, save_file
@@ -29,6 +29,7 @@ def send_welcome(message):
     for handler in bot.message_handlers:
         if cmds := handler.get("filters", {}).get("commands"):
             commands = commands.union(cmds)
+    commands = [Code(f"/{cmd}") for cmd in commands]
 
     msg = Chain(
         PlainText("Hello, how are you doing?"),
@@ -38,9 +39,7 @@ def send_welcome(message):
                 *[Bold(k) + PlainText(f": {v}") for k, v in storage.status.items()]
             ),
         ),
-        TOMLSection(
-            "avaliable commands", UnorderedList(*[PlainText(cmd) for cmd in commands])
-        ),
+        TOMLSection("avaliable commands", UnorderedList(*commands)),
         sep="\n\n",
     )
     bot.send_message(message.chat.id, msg.to_markdown(), parse_mode="MarkdownV2")
