@@ -1,0 +1,8 @@
+description: "对于过去发生的事情的回顾"
+command: "reflect"
+name: "reflection"
+enable: true
+items:
+  earlier_time: "timestamp of that moment"
+  situation: "当时大概情况是什么？"
+  thinking: "有任何后续的结果想要补充吗？事实 or 想法"

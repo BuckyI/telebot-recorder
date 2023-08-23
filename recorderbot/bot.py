@@ -10,7 +10,7 @@ from telebot.util import extract_arguments, extract_command, quick_markup
 from telegram_text import Bold, Chain, Code, PlainText, TOMLSection, UnorderedList
 
 from .components import DataBase
-from .utils import is_small_file, save_file
+from .utils import is_small_file, readable_time, save_file
 
 BOT_TOKEN: Final = config("BOT_TOKEN", default="")
 BOT_USERNAME: Final = config("BOT_USERNAME", default="")
@@ -113,3 +113,15 @@ def restore(message):
         restore_from_webdav,
         lambda query: query.data == "restore webdav",
     )
+
+
+@bot.message_handler(commands=["timestamp"])
+def timestamp(message: telebot.types.Message):
+    if reply := message.reply_to_message:
+        time = reply.date
+        msg = readable_time(time) + ": " + Code(str(time))
+    else:
+        msg = Bold(
+            "You have to reply to a message and call this command to get its timestamp!"
+        )
+    bot.send_message(message.chat.id, msg.to_markdown(), parse_mode="MarkdownV2")
