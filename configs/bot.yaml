@@ -1,0 +1,3 @@
+database:
+  type: tinyDB
+  path: botdb.json

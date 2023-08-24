@@ -5,118 +5,79 @@ from typing import Final
 
 import telebot
 from decouple import config
-from telebot.types import InputFile
+from telebot.types import Message
 from telebot.util import extract_arguments, extract_command, quick_markup
 from telegram_text import Bold, Chain, Code, PlainText, TOMLSection, UnorderedList
 
 from .components import DataBase
-from .utils import is_small_file, readable_time, save_file
+from .utils import load_yaml, readable_time
 
 BOT_TOKEN: Final = config("BOT_TOKEN", default="")
 BOT_USERNAME: Final = config("BOT_USERNAME", default="")
 DATABASE: Final = config("DATABASE", default="botdb.json")
 
-bot = telebot.TeleBot(BOT_TOKEN)
-storage = DataBase(DATABASE)
 
+class Bot:
+    def __init__(
+        self, config: str, bot_name: str = BOT_USERNAME, bot_token: str = BOT_TOKEN
+    ) -> None:
+        """
+        config: path to yaml config path
+        bot_name: bot username
+        bot_token: bot token
+        """
+        assert bot_name and bot_token, "Bot name and token are required"
+        self.bot = telebot.TeleBot(bot_token)
+        self.cfg = load_yaml(config)
+        self.storage = DataBase(self.bot, self.cfg["database"]["path"])
 
-## first level commands
+    def register(self):
+        "register some common commands"
+        bot: telebot.TeleBot = self.bot
+        bot.register_message_handler(self.__command_start, commands=["start"])
+        bot.register_message_handler(timestamp, commands=["timestamp"], pass_bot=True)
+        self.storage.register_commands()
 
+    def run(self):
+        # initialize database, restore data from webdav backup
+        self.storage.restore()
+        logging.info("Start Polling...")
+        self.bot.infinity_polling()
 
-@bot.message_handler(commands=["start"])
-def send_welcome(message):
-    commands = set()
-    for handler in bot.message_handlers:
-        if cmds := handler.get("filters", {}).get("commands"):
-            commands = commands.union(cmds)
-    commands = [Code(f"/{cmd}") for cmd in commands]
+    def stop(self):
+        self.bot.stop_bot()
 
-    msg = Chain(
-        PlainText("Hello, how are you doing?"),
-        TOMLSection(
-            "all records",
-            UnorderedList(
-                *[Bold(k) + PlainText(f": {v}") for k, v in storage.status.items()]
-            ),
-        ),
-        TOMLSection("avaliable commands", UnorderedList(*commands)),
-        sep="\n\n",
-    )
-    bot.send_message(message.chat.id, msg.to_markdown(), parse_mode="MarkdownV2")
+    def __command_start(self, message: Message):
+        "the beginning of everything... clear states"
+        bot: telebot.TeleBot = self.bot
+        user_id, chat_id = message.from_user.id, message.chat.id
 
+        storage_status = self.storage.status.items()
+        storage_status = [Bold(k) + PlainText(f": {v}") for k, v in storage_status]
+        section_database = TOMLSection("all records", UnorderedList(*storage_status))
 
-@bot.message_handler(commands=["debug"])
-def debug(message):
-    bot.send_message(message.chat.id, str(message))
+        state: str | None = bot.get_state(user_id, chat_id)
+        bot.delete_state(user_id, chat_id)
+        section_state = TOMLSection("previous state", PlainText(str(state)))
 
+        commands = set()
+        for handler in bot.message_handlers:
+            if cmds := handler.get("filters", {}).get("commands"):
+                commands = commands.union(cmds)
+        commands = [Code(f"/{cmd}") for cmd in commands]
+        section_cmd = TOMLSection("avaliable commands", UnorderedList(*commands))
 
-@bot.message_handler(commands=["backup"])
-def backup(message):
-    # TODO: Get file ID
-    if not is_small_file(DATABASE):
-        bot.send_message(message.chat.id, "Database is too big to backup 👀")
-    bot.send_document(message.chat.id, InputFile(DATABASE), caption="Backup")
-
-
-@bot.message_handler(commands=["restore"])
-def restore(message):
-    """
-    select how to restore -->
-    - from file --> upload a file --> restore
-    - from webdav --> restore
-    """
-    # TODO: simplify it
-    markup = quick_markup(
-        {
-            "Upload a file 📄": {"callback_data": "restore file"},
-            "From WebDAV 📥": {"callback_data": "restore webdav"},
-        }
-    )
-    bot.reply_to(message, f"Confirm how to restore 👀", reply_markup=markup)
-
-    def restore_from_file(query):
-        chat_id, message_id = query.message.chat.id, query.message.message_id
-        bot.edit_message_text("Give me a document to restore 🤖", chat_id, message_id)
-
-        def save_file_from_message(message):
-            if message.content_type != "document":
-                bot.send_message(message.chat.id, "You have to upload a file 🤖")
-                return
-
-            url = bot.get_file_url(message.document.file_id)
-            save_file(url, "temp.json")
-            msg = bot.send_message(message.chat.id, f"Received, in processing...")
-            num = storage.restore("temp.json")
-            bot.edit_message_text(
-                f"updated {num} item(s) successfully 😃, status: {storage.status}",
-                msg.chat.id,
-                msg.message_id,
-            )
-
-        bot.register_next_step_handler(query.message, save_file_from_message)
-
-    def restore_from_webdav(query):
-        chat_id, message_id = query.message.chat.id, query.message.message_id
-        bot.edit_message_text("in processing... 🤖", chat_id, message_id)
-        num = storage.restore()
-        bot.edit_message_text(
-            f"updated {num} item(s) successfully 😃, status: {storage.status}",
-            chat_id,
-            message_id,
+        msg = Chain(
+            PlainText("Hello, how are you doing?"),
+            section_database,
+            section_cmd,
+            section_state,
+            sep="\n\n",
         )
-
-    bot.register_callback_query_handler(
-        restore_from_file,
-        lambda query: query.data == "restore file",
-    )
-    bot.register_callback_query_handler(
-        restore_from_webdav,
-        lambda query: query.data == "restore webdav",
-    )
+        bot.send_message(message.chat.id, msg.to_markdown(), parse_mode="MarkdownV2")
 
 
-@bot.message_handler(commands=["timestamp"])
-def timestamp(message: telebot.types.Message):
+def timestamp(message: telebot.types.Message, bot: telebot.TeleBot):
     if reply := message.reply_to_message:
         time = reply.date
         msg = readable_time(time) + ": " + Code(str(time))

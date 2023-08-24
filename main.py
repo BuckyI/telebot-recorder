@@ -4,7 +4,7 @@ from typing import Final
 
 from decouple import config
 
-from recorderbot.bot import bot, storage
+from recorderbot.bot import Bot
 from recorderbot.components import Authenticator, Recorder
 
 if __name__ == "__main__":
@@ -16,15 +16,14 @@ if __name__ == "__main__":
     if HTTPS_PROXY:
         os.environ["https_proxy"] = HTTPS_PROXY
 
-    # register
-    auth = Authenticator(bot, storage)
-    auth.register_command("register")
+    bot = Bot("configs/bot.yaml")
 
-    recorder = Recorder(bot, storage)
-    recorder.register("configs/")
+    # register message handlers
+    bot.register()
+    auth = Authenticator(bot.bot, bot.storage)
+    auth.register_command("register")
+    recorder = Recorder(bot.bot, bot.storage)
+    recorder.register("configs/templates/")
     # WARNING: recorder 会接收所有 text 类型的消息，不要在此之后 register
 
-    # initialize database, restore data from webdav backup
-    storage.restore()
-    logging.info("Start Polling...")
-    bot.infinity_polling()
+    bot.run()
