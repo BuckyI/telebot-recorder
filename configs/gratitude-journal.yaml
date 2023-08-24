@@ -1,0 +1,14 @@
+description: |
+  Gratitude journaling focuses on what you are grateful for, not what you need to do or record what happened.
+
+  - A run around Florida’s Fisher Island with a slight breeze that kept me cool;
+  - Eating cold melon on a bench in the sun;
+  - A long and hilarious chat with Gayle about her blind date with Mr. Potato Head;
+  - Sorbet in a cone, so sweet that I literally licked my finger;
+  - Maya Angelou calling to read me a new poem (Winfrey, n.d.).
+
+command: "gratitude"
+name: "gratitude-journal"
+enable: true
+items:
+  content: "so what are you grateful for? (something makes you happy!)"
